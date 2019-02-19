@@ -1,135 +1,144 @@
-'use-strict'
+"use-strict";
 
 // base libs
-import PropTypes from 'prop-types'
-import React, { PureComponent } from 'react'
-import {
-  Platform,
-  Dimensions,
-  LayoutAnimation
-} from 'react-native'
+import PropTypes from "prop-types";
+import React, { PureComponent } from "react";
+import { Platform, Dimensions, LayoutAnimation } from "react-native";
 // map-related libs
-import MapView from 'react-native-maps'
-import SuperCluster from 'supercluster'
-import GeoViewport from '@mapbox/geo-viewport'
+import MapView from "react-native-maps";
+import SuperCluster from "supercluster";
+import GeoViewport from "@mapbox/geo-viewport";
 // components / views
-import ClusterMarker from './ClusterMarker'
+import ClusterMarker from "./ClusterMarker";
 // libs / utils
-import {
-  regionToBoundingBox,
-  itemToGeoJSONFeature
-} from './util'
+import { regionToBoundingBox, itemToGeoJSONFeature } from "./util";
 
 export default class ClusteredMapView extends PureComponent {
-
   constructor(props) {
-    super(props)
+    super(props);
 
     this.state = {
       data: [], // helds renderable clusters and markers
-      region: props.region || props.initialRegion, // helds current map region
-    }
+      region: props.region || props.initialRegion // helds current map region
+    };
 
-    this.isAndroid = Platform.OS === 'android'
-    this.dimensions = [props.width, props.height]
+    this.isAndroid = Platform.OS === "android";
+    this.dimensions = [props.width, props.height];
 
-    this.mapRef = this.mapRef.bind(this)
-    this.onClusterPress = this.onClusterPress.bind(this)
-    this.onRegionChangeComplete = this.onRegionChangeComplete.bind(this)
+    this.mapRef = this.mapRef.bind(this);
+    this.onClusterPress = this.onClusterPress.bind(this);
+    this.onRegionChangeComplete = this.onRegionChangeComplete.bind(this);
   }
 
   componentDidMount() {
-    this.clusterize(this.props.data)
+    this.clusterize(this.props.data);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.data !== nextProps.data)
-      this.clusterize(nextProps.data)
+    if (this.props.data !== nextProps.data) this.clusterize(nextProps.data);
   }
 
   componentWillUpdate(nextProps, nextState) {
-    if (!this.isAndroid && this.props.animateClusters && this.clustersChanged(nextState))
-      LayoutAnimation.configureNext(this.props.layoutAnimationConf)
+    if (
+      !this.isAndroid &&
+      this.props.animateClusters &&
+      this.clustersChanged(nextState)
+    )
+      LayoutAnimation.configureNext(this.props.layoutAnimationConf);
   }
 
-  mapRef = (ref) => {
-    this.mapview = ref
-  }
+  mapRef = ref => {
+    this.mapview = ref;
+  };
 
-  getMapRef = () => this.mapview
+  getMapRef = () => this.mapview;
 
-  getClusteringEngine = () => this.index
+  getClusteringEngine = () => this.index;
 
-  clusterize = (dataset) => {
-    this.index = SuperCluster({ // eslint-disable-line new-cap
+  clusterize = dataset => {
+    this.index = SuperCluster({
+      // eslint-disable-line new-cap
       extent: this.props.extent,
       minZoom: this.props.minZoom,
       maxZoom: this.props.maxZoom,
-      radius: this.props.radius || (this.dimensions[0] * .045), // 4.5% of screen width
-    })
+      radius: this.props.radius || this.dimensions[0] * 0.045 // 4.5% of screen width
+    });
 
     // get formatted GeoPoints for cluster
-    const rawData = dataset.map(itemToGeoJSONFeature)
+    const rawData = dataset.map(itemToGeoJSONFeature);
 
     // load geopoints into SuperCluster
-    this.index.load(rawData)
+    this.index.load(rawData);
 
-    const data = this.getClusters(this.state.region)
-    this.setState({ data })
-  }
+    const data = this.getClusters(this.state.region);
+    this.setState({ data });
+  };
 
-  clustersChanged = (nextState) => this.state.data.length !== nextState.data.length
+  clustersChanged = nextState =>
+    this.state.data.length !== nextState.data.length;
 
-  onRegionChangeComplete = (region) => {
-    let data
+  onRegionChangeComplete = region => {
+    let data;
     if (region.longitudeDelta <= 80) {
-      data = this.getClusters(region)
+      data = this.getClusters(region);
       this.setState({ region, data }, () => {
-        this.props.onRegionChangeComplete && this.props.onRegionChangeComplete(region, data)
-      })
+        this.props.onRegionChangeComplete &&
+          this.props.onRegionChangeComplete(region, data);
+      });
     } else {
-      this.props.onRegionChangeComplete && this.props.onRegionChangeComplete(region, data)
+      this.props.onRegionChangeComplete &&
+        this.props.onRegionChangeComplete(region, data);
     }
-  }
+  };
 
-  getClusters = (region) => {
+  getClusters = region => {
     const bbox = regionToBoundingBox(region),
-          viewport = (region.longitudeDelta) >= 40 ? { zoom: this.props.minZoom } : GeoViewport.viewport(bbox, this.dimensions)
+      viewport =
+        region.longitudeDelta >= 40
+          ? { zoom: this.props.minZoom }
+          : GeoViewport.viewport(bbox, this.dimensions);
 
-    return this.index.getClusters(bbox, viewport.zoom)
-  }
+    return this.index.getClusters(bbox, viewport.zoom);
+  };
 
-  onClusterPress = (cluster) => {
-
+  onClusterPress = cluster => {
     // cluster press behavior might be extremely custom.
     if (!this.props.preserveClusterPressBehavior) {
-      this.props.onClusterPress && this.props.onClusterPress(cluster.properties.cluster_id)
-      return
+      this.props.onClusterPress &&
+        this.props.onClusterPress(cluster.properties.cluster_id);
+      return;
     }
 
     // //////////////////////////////////////////////////////////////////////////////////
     // NEW IMPLEMENTATION (with fitToCoordinates)
     // //////////////////////////////////////////////////////////////////////////////////
     // get cluster children
-    const children = this.index.getLeaves(cluster.properties.cluster_id, this.props.clusterPressMaxChildren),
-          markers = children.map(c => c.properties.item)
+    const children = this.index.getLeaves(
+        cluster.properties.cluster_id,
+        this.props.clusterPressMaxChildren
+      ),
+      markers = children.map(c => c.properties.item);
 
     // fit right around them, considering edge padding
-    this.mapview.fitToCoordinates(markers.map(m => m.location), { edgePadding: this.props.edgePadding })
+    this.mapview.fitToCoordinates(markers.map(m => m.attributes.location), {
+      edgePadding: this.props.edgePadding
+    });
 
-    this.props.onClusterPress && this.props.onClusterPress(cluster.properties.cluster_id, markers)
-  }
+    this.props.onClusterPress &&
+      this.props.onClusterPress(cluster.properties.cluster_id, markers);
+  };
 
   render() {
     return (
       <MapView
-        { ...this.props}
+        {...this.props}
         ref={this.mapRef}
-        onRegionChangeComplete={this.onRegionChangeComplete}>
-        {
-          this.props.clusteringEnabled && this.state.data.map((d) => {
+        onRegionChangeComplete={this.onRegionChangeComplete}
+      >
+        {this.props.clusteringEnabled &&
+          this.state.data.map(d => {
             if (d.properties.point_count === 0)
-              return this.props.renderMarker(d.properties.item)
+              return this.props.renderMarker(d.properties.item);
 
             return (
               <ClusterMarker
@@ -141,16 +150,15 @@ export default class ClusteredMapView extends PureComponent {
                 key={`cluster-${d.properties.cluster_id}`}
                 containerStyle={this.props.containerStyle}
                 clusterInitialFontSize={this.props.clusterInitialFontSize}
-                clusterInitialDimension={this.props.clusterInitialDimension} />
-            )
-          })
-        }
-        {
-          !this.props.clusteringEnabled && this.props.data.map(d => this.props.renderMarker(d))
-        }
+                clusterInitialDimension={this.props.clusterInitialDimension}
+              />
+            );
+          })}
+        {!this.props.clusteringEnabled &&
+          this.props.data.map(d => this.props.renderMarker(d))}
         {this.props.children}
       </MapView>
-    )
+    );
   }
 }
 
@@ -166,11 +174,11 @@ ClusteredMapView.defaultProps = {
   clusterInitialDimension: 30,
   clusterPressMaxChildren: 100,
   preserveClusterPressBehavior: true,
-  width: Dimensions.get('window').width,
-  height: Dimensions.get('window').height,
+  width: Dimensions.get("window").width,
+  height: Dimensions.get("window").height,
   layoutAnimationConf: LayoutAnimation.Presets.spring,
   edgePadding: { top: 10, left: 10, right: 10, bottom: 10 }
-}
+};
 
 ClusteredMapView.propTypes = {
   ...MapView.propTypes,
@@ -201,6 +209,6 @@ ClusteredMapView.propTypes = {
   textStyle: PropTypes.object,
   containerStyle: PropTypes.object,
   layoutAnimationConf: PropTypes.object,
-  edgePadding: PropTypes.object.isRequired,
+  edgePadding: PropTypes.object.isRequired
   // string
-}
+};
