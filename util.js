@@ -64,11 +64,12 @@ export const boundingBoxToRegion = (bbox) => {
  * @param {Object} item - JS object containing marker data
  * @returns {Object} - GeoJSON Feature object
  */
-export const itemToGeoJSONFeature = (item) => ({
+export const itemToGeoJSONFeature = ({ attributes }) => ({
   type: 'Feature',
   geometry: {
     type: 'Point',
-    coordinates: [item.attributes.location.longitude, item.attributes.location.latitude]
+    coordinates: [attributes.location.longitude, attributes.location.latitude]
   },
-  properties: { point_count: 0, item } // eslint-disable-line camelcase
+  properties: { point_count: 0, item: { ...attributes } } // eslint-disable-line camelcase
 })
+
