@@ -23,7 +23,7 @@ export default class ClusteredMapView extends PureComponent {
     };
 
     this.isAndroid = Platform.OS === "android";
-    this.dimensions = [props.width, props.height];
+    this.dimensions = [props.calcWidth, props.calcHeight];
 
     this.mapRef = this.mapRef.bind(this);
     this.onClusterPress = this.onClusterPress.bind(this);
@@ -174,8 +174,10 @@ ClusteredMapView.defaultProps = {
   clusterInitialDimension: 30,
   clusterPressMaxChildren: 100,
   preserveClusterPressBehavior: true,
-  width: Dimensions.get("window").width,
-  height: Dimensions.get("window").height,
+  calcWidth: Dimensions.get("window").width,
+  calcHeight: Dimensions.get("window").height + 24,
+  height: '100%',
+  width: '100%',
   layoutAnimationConf: LayoutAnimation.Presets.spring,
   edgePadding: { top: 10, left: 10, right: 10, bottom: 10 }
 };
@@ -184,8 +186,8 @@ ClusteredMapView.propTypes = {
   ...MapView.propTypes,
   // number
   radius: PropTypes.number,
-  width: PropTypes.number.isRequired,
-  height: PropTypes.number.isRequired,
+  calcWidth: PropTypes.number.isRequired,
+  calcHeight: PropTypes.number.isRequired,
   extent: PropTypes.number.isRequired,
   minZoom: PropTypes.number.isRequired,
   maxZoom: PropTypes.number.isRequired,
@@ -209,6 +211,8 @@ ClusteredMapView.propTypes = {
   textStyle: PropTypes.object,
   containerStyle: PropTypes.object,
   layoutAnimationConf: PropTypes.object,
-  edgePadding: PropTypes.object.isRequired
+  edgePadding: PropTypes.object.isRequired,
   // string
+  width: PropTypes.string,
+  height: PropTypes.string,
 };
